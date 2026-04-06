@@ -31,10 +31,18 @@ function Login() {
   const [password, setPassword] = useState("");
   const [securityCode, setSecurityCode] = useState("");
   const [requireCode, setRequireCode] = useState(false);
-  const [expectedCode, setExpectedCode] = useState("");
-  const [userToVerify, setUserToVerify] = useState(null);
-  const [tokenToVerify, setTokenToVerify] = useState(null);
+  const [pendingToken, setPendingToken] = useState("");
+  const [twoFactorUser, setTwoFactorUser] = useState(null);
+  const [twoFactorExpiresInMinutes, setTwoFactorExpiresInMinutes] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const resetTwoFactorState = () => {
+    setRequireCode(false);
+    setSecurityCode("");
+    setPendingToken("");
+    setTwoFactorUser(null);
+    setTwoFactorExpiresInMinutes(null);
+  };
 
   const finishLogin = (userData, authToken) => {
     login(userData, authToken);
@@ -56,26 +64,33 @@ function Login() {
     event.preventDefault();
     setLoading(true);
 
-    if (requireCode) {
-      if (securityCode !== expectedCode) {
-        alert("Codigo de seguridad incorrecto.");
-        setLoading(false);
-        return;
-      }
-
-      if (!userToVerify || !tokenToVerify) {
-        alert("Error: No se encontro la informacion del usuario para completar la sesion.");
-        setLoading(false);
-        return;
-      }
-
-      finishLogin(userToVerify, tokenToVerify);
-      alert("Inicio de sesion exitoso");
-      setLoading(false);
-      return;
-    }
-
     try {
+      if (requireCode) {
+        if (!pendingToken) {
+          alert("La verificacion de segundo factor ya no es valida. Vuelve a iniciar sesion.");
+          resetTwoFactorState();
+          return;
+        }
+
+        const data = await httpRequest(API_ENDPOINTS.auth.verifyLoginCode, {
+          method: "POST",
+          data: {
+            pendingToken,
+            code: securityCode
+          }
+        });
+
+        if (!data?.success) {
+          alert(data?.message || "No se pudo validar el codigo de seguridad.");
+          return;
+        }
+
+        resetTwoFactorState();
+        finishLogin(data.user, data.token);
+        alert(data.message || "Inicio de sesion exitoso");
+        return;
+      }
+
       const data = await httpRequest(API_ENDPOINTS.auth.login, {
         method: "POST",
         data: { email, password }
@@ -87,18 +102,15 @@ function Login() {
         return;
       }
 
-      setUserToVerify(data.user);
-      setTokenToVerify(data.token);
-
-      if (data.user.id_rol === 1) {
+      if (data.requiresTwoFactor) {
         setRequireCode(true);
-        setExpectedCode("123");
-        alert("Este usuario es ADMIN. Ingrese el codigo de seguridad.");
-      } else if (data.user.id_rol === 2) {
-        setRequireCode(true);
-        setExpectedCode("456");
-        alert("Este usuario es EMPLEADO. Ingrese el codigo de seguridad.");
+        setPendingToken(data.pendingToken || "");
+        setTwoFactorUser(data.user || null);
+        setTwoFactorExpiresInMinutes(data.twoFactorExpiresInMinutes || null);
+        setSecurityCode("");
+        alert(data.message || "Se envio un codigo de seguridad a tu correo.");
       } else {
+        resetTwoFactorState();
         finishLogin(data.user, data.token);
       }
     } catch (error) {
@@ -106,12 +118,15 @@ function Login() {
         alert("Debes verificar tu correo antes de iniciar sesion.");
         navigate(`/verificar?email=${encodeURIComponent(email)}`);
       } else {
+        if (requireCode && (error.status === 400 || error.status === 401)) {
+          resetTwoFactorState();
+        }
         console.error("Error al iniciar sesion:", error);
         alert(error.message || "Error de conexion con el servidor de autenticacion.");
       }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -162,22 +177,41 @@ function Login() {
             </div>
 
             {requireCode ? (
-              <div className="form-group">
-                <label htmlFor="securityCode">Codigo de seguridad</label>
-                <input
-                  type="text"
-                  id="securityCode"
-                  placeholder="Ingrese el codigo de seguridad"
-                  value={securityCode}
-                  onChange={(event) => setSecurityCode(event.target.value)}
-                  required
-                />
-              </div>
+              <>
+                <p className="login-helper-text">
+                  Ingresa el codigo enviado a {twoFactorUser?.email || email}.
+                  {twoFactorExpiresInMinutes ? ` Vence en ${twoFactorExpiresInMinutes} minutos.` : ""}
+                </p>
+
+                <div className="form-group">
+                  <label htmlFor="securityCode">Codigo de seguridad</label>
+                  <input
+                    type="text"
+                    id="securityCode"
+                    placeholder="Ingrese el codigo recibido por correo"
+                    value={securityCode}
+                    onChange={(event) => setSecurityCode(event.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </>
             ) : null}
 
             <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? "Ingresando..." : "Ingresar"}
+              {loading ? "Procesando..." : requireCode ? "Verificar codigo" : "Ingresar"}
             </button>
+
+            {requireCode ? (
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={resetTwoFactorState}
+                disabled={loading}
+              >
+                Volver al inicio de sesion
+              </button>
+            ) : null}
 
             <div className="register-link">
               <p>

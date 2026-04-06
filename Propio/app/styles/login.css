@@ -94,6 +94,25 @@ main {
     border-radius: 8px;
 }
 
+.secondary-btn {
+    width: 100%;
+    max-width: 250px;
+    display: block;
+    margin: 12px auto 0;
+    background-color: transparent;
+    color: var(--color-portal-header);
+    padding: 12px 20px;
+    border: 1px solid var(--color-portal-header);
+    border-radius: 8px;
+}
+
+.login-helper-text {
+    margin: 0 0 18px;
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
 .login-separator {
     display: flex;
     align-items: center;

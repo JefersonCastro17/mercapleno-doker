@@ -3,27 +3,31 @@ import "../styles/usuarioC.css";
 import { useAuthContext } from "../contexts/AuthContext";
 import { httpRequest } from "../lib/api/httpClient";
 import { API_ENDPOINTS } from "../lib/config/api.config";
+import { getDocumentTypes } from "../lib/services/documentTypesService";
+
+const getEmptyForm = (defaultDocumentTypeId = "") => ({
+  nombre: "",
+  apellido: "",
+  email: "",
+  password: "",
+  direccion: "",
+  fecha_nacimiento: "",
+  id_rol: "3",
+  id_tipo_identificacion: defaultDocumentTypeId,
+  numero_identificacion: ""
+});
 
 export default function UsuarioC() {
   const { token, logout } = useAuthContext();
 
   const [usuarios, setUsuarios] = useState([]);
+  const [documentTypes, setDocumentTypes] = useState([]);
+  const [loadingDocumentTypes, setLoadingDocumentTypes] = useState(false);
   const [mostrar, setMostrar] = useState(false);
   const [editId, setEditId] = useState(null);
   const [busqueda, setBusqueda] = useState("");
   const [toast, setToast] = useState(null);
-
-  const [form, setForm] = useState({
-    nombre: "",
-    apellido: "",
-    email: "",
-    password: "",
-    direccion: "",
-    fecha_nacimiento: "",
-    id_rol: "3",
-    id_tipo_identificacion: "1",
-    numero_identificacion: ""
-  });
+  const [form, setForm] = useState(() => getEmptyForm());
 
   const mostrarToast = (mensaje, tipo = "success") => {
     setToast({ mensaje, tipo });
@@ -59,16 +63,117 @@ export default function UsuarioC() {
     }
   }, [cargar, token]);
 
+  useEffect(() => {
+    let activo = true;
+
+    const cargarTiposIdentificacion = async () => {
+      setLoadingDocumentTypes(true);
+
+      try {
+        const tipos = await getDocumentTypes();
+
+        if (!activo) return;
+
+        setDocumentTypes(tipos);
+        setForm((currentForm) =>
+          currentForm.id_tipo_identificacion || tipos.length === 0
+            ? currentForm
+            : { ...currentForm, id_tipo_identificacion: tipos[0].id }
+        );
+      } catch (error) {
+        if (!activo) return;
+
+        console.error("Error al cargar tipos de identificacion:", error);
+        mostrarToast("No se pudieron cargar los tipos de identificacion.", "error");
+      } finally {
+        if (activo) {
+          setLoadingDocumentTypes(false);
+        }
+      }
+    };
+
+    cargarTiposIdentificacion();
+
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  const limpiar = (defaultDocumentTypeId = documentTypes[0]?.id || "") => {
+    setForm(getEmptyForm(defaultDocumentTypeId));
+  };
+
+  const cerrarModal = () => {
+    setMostrar(false);
+    setEditId(null);
+    limpiar();
+  };
+
+  const abrirNuevoUsuario = () => {
+    setEditId(null);
+    limpiar();
+    setMostrar(true);
+  };
+
+  const validarFormulario = () => {
+    const camposRequeridos = [
+      { key: "nombre", label: "Nombre" },
+      { key: "apellido", label: "Apellido" },
+      { key: "email", label: "Email" },
+      { key: "direccion", label: "Direccion" },
+      { key: "fecha_nacimiento", label: "Fecha de nacimiento" },
+      { key: "id_tipo_identificacion", label: "Tipo de identificacion" },
+      { key: "numero_identificacion", label: "Numero de identificacion" }
+    ];
+
+    const campoVacio = camposRequeridos.find(({ key }) => !String(form[key] || "").trim());
+    if (campoVacio) {
+      mostrarToast(`${campoVacio.label} es obligatorio.`, "error");
+      return false;
+    }
+
+    if (!editId && String(form.password || "").trim().length < 6) {
+      mostrarToast("La contrasena debe tener al menos 6 caracteres.", "error");
+      return false;
+    }
+
+    if (editId && form.password && form.password.trim().length < 6) {
+      mostrarToast("La nueva contrasena debe tener al menos 6 caracteres.", "error");
+      return false;
+    }
+
+    return true;
+  };
+
+  const construirPayload = () => {
+    const payload = {
+      nombre: form.nombre.trim(),
+      apellido: form.apellido.trim(),
+      email: form.email.trim(),
+      direccion: form.direccion.trim(),
+      fecha_nacimiento: form.fecha_nacimiento,
+      id_rol: Number(form.id_rol),
+      id_tipo_identificacion: Number(form.id_tipo_identificacion),
+      numero_identificacion: form.numero_identificacion.trim()
+    };
+
+    if (form.password?.trim()) {
+      payload.password = form.password.trim();
+    }
+
+    return payload;
+  };
+
   const guardar = async () => {
+    if (!validarFormulario()) {
+      return;
+    }
+
     const url = editId
       ? `${API_ENDPOINTS.admin.users}/${editId}`
       : API_ENDPOINTS.admin.users;
     const method = editId ? "PUT" : "POST";
-
-    const payload = { ...form };
-    if (editId && !payload.password) {
-      delete payload.password;
-    }
+    const payload = construirPayload();
 
     try {
       const data = await httpRequest(url, {
@@ -84,9 +189,7 @@ export default function UsuarioC() {
       }
 
       mostrarToast(editId ? "Usuario actualizado" : "Usuario creado");
-      setMostrar(false);
-      setEditId(null);
-      limpiar();
+      cerrarModal();
       cargar();
     } catch (error) {
       if (manejarErrorAuth(error)) return;
@@ -94,32 +197,18 @@ export default function UsuarioC() {
     }
   };
 
-  const limpiar = () => {
-    setForm({
-      nombre: "",
-      apellido: "",
-      email: "",
-      password: "",
-      direccion: "",
-      fecha_nacimiento: "",
-      id_rol: "3",
-      id_tipo_identificacion: "1",
-      numero_identificacion: ""
-    });
-  };
-
   const editar = (u) => {
     setEditId(u.id);
     setForm({
-      nombre: u.nombre,
-      apellido: u.apellido,
-      email: u.email,
+      nombre: u.nombre || "",
+      apellido: u.apellido || "",
+      email: u.email || "",
       password: "",
-      direccion: u.direccion,
+      direccion: u.direccion || "",
       fecha_nacimiento: u.fecha_nacimiento?.split("T")[0] || "",
       id_rol: String(u.id_rol),
-      id_tipo_identificacion: String(u.id_tipo_identificacion),
-      numero_identificacion: u.numero_identificacion
+      id_tipo_identificacion: String(u.id_tipo_identificacion || ""),
+      numero_identificacion: u.numero_identificacion || ""
     });
     setMostrar(true);
   };
@@ -160,7 +249,7 @@ export default function UsuarioC() {
 
       <div className="main">
         <div className="controles">
-          <button className="btn-crear" onClick={() => setMostrar(true)}>
+          <button className="btn-crear" onClick={abrirNuevoUsuario}>
             Nuevo Usuario
           </button>
 
@@ -197,7 +286,7 @@ export default function UsuarioC() {
                     <td>{u.nombre} {u.apellido}</td>
                     <td>{u.email}</td>
                     <td>{rolBadge(u.id_rol)}</td>
-                    <td>{u.id_tipo_identificacion}</td>
+                    <td>{u.tipo_identificacion || u.id_tipo_identificacion}</td>
                     <td>{u.numero_identificacion}</td>
                     <td>
                       <button className="btn-modificar" onClick={() => editar(u)}>
@@ -220,7 +309,7 @@ export default function UsuarioC() {
           <div className="modal-content">
             <div className="modal-header">
               <h2>{editId ? "Editar Usuario" : "Nuevo Usuario"}</h2>
-              <button className="modal-close" onClick={() => setMostrar(false)}>x</button>
+              <button className="modal-close" onClick={cerrarModal}>x</button>
             </div>
 
             <div className="modal-body">
@@ -236,15 +325,34 @@ export default function UsuarioC() {
               ))}
 
               <div className="form-group">
+                <label>Fecha de Nacimiento</label>
+                <input
+                  type="date"
+                  className="input"
+                  value={form.fecha_nacimiento}
+                  onChange={(e) => setForm({ ...form, fecha_nacimiento: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
                 <label>Tipo de Identificacion</label>
                 <select
                   className="input"
                   value={form.id_tipo_identificacion}
                   onChange={(e) => setForm({ ...form, id_tipo_identificacion: e.target.value })}
+                  disabled={loadingDocumentTypes || documentTypes.length === 0}
                 >
-                  <option value="1">Cedula</option>
-                  <option value="2">Pasaporte</option>
-                  <option value="3">Otro</option>
+                  {loadingDocumentTypes ? (
+                    <option value="">Cargando tipos...</option>
+                  ) : documentTypes.length > 0 ? (
+                    documentTypes.map((documentType) => (
+                      <option key={documentType.id} value={documentType.id}>
+                        {documentType.nombre}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">No hay tipos disponibles</option>
+                  )}
                 </select>
               </div>
 
@@ -261,22 +369,20 @@ export default function UsuarioC() {
                 </select>
               </div>
 
-              {!editId && (
-                <div className="form-group">
-                  <label>Contrasena</label>
-                  <input
-                    type="password"
-                    className="input"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  />
-                </div>
-              )}
+              <div className="form-group">
+                <label>{editId ? "Nueva Contrasena (opcional)" : "Contrasena"}</label>
+                <input
+                  type="password"
+                  className="input"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                />
+              </div>
             </div>
 
             <div className="modal-footer">
               <button className="btn-guardar" onClick={guardar}>Guardar</button>
-              <button className="btn-cancelar" onClick={() => setMostrar(false)}>Cancelar</button>
+              <button className="btn-cancelar" onClick={cerrarModal}>Cancelar</button>
             </div>
           </div>
         </div>

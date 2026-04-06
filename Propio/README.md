@@ -150,7 +150,7 @@ Rutas protegidas principales (definidas en `app/App.jsx`):
 ### 7.12 `app/routes/`
 | Archivo | Funcion especifica |
 |---|---|
-| `app/routes/Login.jsx` | Inicio de sesion. Maneja doble paso por rol (codigo local `123` admin, `456` empleado). |
+| `app/routes/Login.jsx` | Inicio de sesion. Si el backend exige segundo factor para admin/empleado, solicita el codigo real enviado por correo antes de guardar la sesion. |
 | `app/routes/Registro.jsx` | Registro de usuario cliente (`id_rol=3`) con validacion minima y redireccion a verificacion. |
 | `app/routes/Verificar.jsx` | Verificacion de correo y reenvio de codigo. |
 | `app/routes/Recuperar.jsx` | Recuperacion de clave en 2 pasos: solicitar codigo y resetear clave. |

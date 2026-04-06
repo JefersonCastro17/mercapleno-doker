@@ -39,6 +39,12 @@ const productMultipartSchema = {
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
+  @Get('catalogos')
+  @ApiOperation({ summary: 'Listar categorias y proveedores disponibles para productos' })
+  getCatalogs() {
+    return this.productsService.getCatalogs();
+  }
+
   @Get()
   @ApiOperation({ summary: 'Listar productos' })
   findAll() {

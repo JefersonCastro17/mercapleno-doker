@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { productos_estado } from '@prisma/client';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Prisma, productos_estado } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -9,10 +9,88 @@ import { deleteStoredProductImage } from './product-image-upload.util';
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private handlePersistenceError(error: unknown, fallbackMessage: string): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2003') {
+        throw new BadRequestException({
+          message: 'La categoria o el proveedor seleccionados no existen en la base de datos',
+        });
+      }
+    }
+
+    throw new InternalServerErrorException({ message: fallbackMessage });
+  }
+
   async findAll() {
-    return this.prisma.productos.findMany({
+    const products = await this.prisma.productos.findMany({
+      include: {
+        categoria: {
+          select: {
+            id_categoria: true,
+            nombre: true,
+          },
+        },
+        proveedor: {
+          select: {
+            id_proveedor: true,
+            nombre: true,
+            apellido: true,
+          },
+        },
+      },
       orderBy: { id_productos: 'asc' },
     });
+
+    return products.map((product) => ({
+      id_productos: product.id_productos,
+      nombre: product.nombre,
+      precio: product.precio,
+      id_categoria: product.id_categoria,
+      id_proveedor: product.id_proveedor,
+      descripcion: product.descripcion,
+      estado: product.estado,
+      imagen: product.imagen,
+      categoria_nombre: product.categoria?.nombre ?? null,
+      proveedor_nombre: [product.proveedor?.nombre, product.proveedor?.apellido]
+        .filter(Boolean)
+        .join(' ')
+        .trim() || null,
+    }));
+  }
+
+  async getCatalogs() {
+    const [categorias, proveedores] = await Promise.all([
+      this.prisma.categoria.findMany({
+        select: {
+          id_categoria: true,
+          nombre: true,
+        },
+        orderBy: {
+          nombre: 'asc',
+        },
+      }),
+      this.prisma.proveedor.findMany({
+        select: {
+          id_proveedor: true,
+          nombre: true,
+          apellido: true,
+        },
+        orderBy: {
+          nombre: 'asc',
+        },
+      }),
+    ]);
+
+    return {
+      categorias: categorias.map((categoria) => ({
+        id: categoria.id_categoria,
+        nombre: categoria.nombre ?? `Categoria ${categoria.id_categoria}`,
+      })),
+      proveedores: proveedores.map((proveedor) => ({
+        id: proveedor.id_proveedor,
+        nombre: [proveedor.nombre, proveedor.apellido].filter(Boolean).join(' ').trim() || `Proveedor ${proveedor.id_proveedor}`,
+      })),
+    };
   }
 
   async create(dto: CreateProductDto, uploadedImagePath?: string) {
@@ -40,7 +118,7 @@ export class ProductsService {
         deleteStoredProductImage(uploadedImagePath);
       }
 
-      throw error;
+      this.handlePersistenceError(error, 'No se pudo crear el producto');
     }
   }
 
@@ -83,7 +161,7 @@ export class ProductsService {
         deleteStoredProductImage(uploadedImagePath);
       }
 
-      throw error;
+      this.handlePersistenceError(error, 'No se pudo actualizar el producto');
     }
 
     if (uploadedImagePath && existing.imagen && existing.imagen !== uploadedImagePath) {

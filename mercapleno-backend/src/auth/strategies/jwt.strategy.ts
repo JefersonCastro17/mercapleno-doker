@@ -8,6 +8,7 @@ interface JwtPayload {
   sub: string | number;
   id_rol: number;
   email: string;
+  token_type: string;
 }
 
 @Injectable()
@@ -21,7 +22,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   validate(payload: JwtPayload): AuthUser {
-    if (payload.sub === undefined || payload.sub === null || !payload.email || payload.id_rol === undefined) {
+    if (
+      payload.sub === undefined ||
+      payload.sub === null ||
+      !payload.email ||
+      payload.id_rol === undefined ||
+      payload.token_type !== 'access'
+    ) {
       throw new UnauthorizedException('Token invalido');
     }
 

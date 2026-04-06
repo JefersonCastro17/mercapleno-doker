@@ -34,6 +34,7 @@ const ModalMovimiento = ({
   const [comentario, setComentario] = useState("");
   const [error, setError] = useState(null);
   const currentDocumentOptions = documentOptionsByType[tipo] || [];
+  const canUseManualDocumentCode = !loadingDocumentOptions && currentDocumentOptions.length === 0;
 
   useEffect(() => {
     if (currentDocumentOptions.length === 0) {
@@ -133,32 +134,52 @@ const ModalMovimiento = ({
 
             <div className="form-group">
               <label>Doc. de Referencia</label>
-              <select
-                value={documento}
-                onChange={(e) => {
-                  setDocumento(e.target.value);
-                  setError(null);
-                }}
-                className="input"
-                required
-                disabled={loadingDocumentOptions || currentDocumentOptions.length === 0}
-              >
-                {loadingDocumentOptions ? (
-                  <option value="">Cargando documentos...</option>
-                ) : currentDocumentOptions.length > 0 ? (
-                  <>
-                    <option value="">Seleccione un documento</option>
-                    {currentDocumentOptions.map((option) => (
-                      <option key={`${tipo}-${option.id_documento}`} value={option.id_documento}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </>
-                ) : (
-                  <option value="">No hay documentos disponibles</option>
-                )}
-              </select>
-              {documentOptionsError && (
+              {canUseManualDocumentCode ? (
+                <>
+                  <input
+                    type="text"
+                    value={documento}
+                    onChange={(e) => {
+                      setDocumento(e.target.value.toUpperCase().slice(0, 2));
+                      setError(null);
+                    }}
+                    className="input"
+                    placeholder="Ej: CC"
+                    maxLength={2}
+                    required
+                  />
+                  <small className="help-text">
+                    No hay documentos historicos cargados en esta base. Puedes escribir un codigo manual de 2 letras.
+                  </small>
+                </>
+              ) : (
+                <select
+                  value={documento}
+                  onChange={(e) => {
+                    setDocumento(e.target.value);
+                    setError(null);
+                  }}
+                  className="input"
+                  required
+                  disabled={loadingDocumentOptions}
+                >
+                  {loadingDocumentOptions ? (
+                    <option value="">Cargando documentos...</option>
+                  ) : currentDocumentOptions.length > 0 ? (
+                    <>
+                      <option value="">Seleccione un documento</option>
+                      {currentDocumentOptions.map((option) => (
+                        <option key={`${tipo}-${option.id_documento}`} value={option.id_documento}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </>
+                  ) : (
+                    <option value="">No hay documentos disponibles</option>
+                  )}
+                </select>
+              )}
+              {documentOptionsError && !canUseManualDocumentCode && (
                 <small className="help-text" style={{ color: "#dc3545" }}>
                   {documentOptionsError}
                 </small>

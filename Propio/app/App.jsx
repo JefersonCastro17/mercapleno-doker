@@ -1,5 +1,3 @@
-// 🟢 src/App.js (VERSION FINAL Y CORREGIDA con RegistroMovimientos)
-
 import React from 'react';
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 // Importación de Contextos y Componentes
@@ -9,6 +7,7 @@ import Header from './components/ui/Header';
 import InventoryPage from './routes/InventoryPage'; 
 import CartPage from './routes/CartPage'; 			
 import TicketPage from './routes/TicketPage'; 	
+import Home from './routes/Home';
 import Login from './routes/Login'; 					 
 import Registro from './routes/Registro'; 			 
 import Verificar from './routes/Verificar';
@@ -23,7 +22,7 @@ import RegistroMovimientos from './routes/RegistroMovimientos'; // <-- AÑADIDO 
 
 
 /**
- * 💡 COMPONENTE AUXILIAR: RoleRoute (Se mantiene sin cambios)
+ *COMPONENTE AUXILIAR: RoleRoute (Se mantiene sin cambios)
  */
 function RoleRoute({ requiredRoles, element }) {
     const { user } = useAuthContext();
@@ -64,9 +63,9 @@ function App() {
 			{isAuthenticated && user && <Header />}
 			<Routes>
 				
-				{/* 🔒 RUTAS PÚBLICAS */}
+				{/*RUTAS PÚBLICAS */}       // aqui se pone los roles donde se validaron a la bd donde en el backend cada componente lo valida
 				<Route path="/" element={
-                    isAuthenticated ? <Navigate to={getHomeRoute()} replace /> : <Navigate to="/login" replace />
+                    isAuthenticated ? <Navigate to={getHomeRoute()} replace /> : <Home />
                 } />
 				<Route
                     path="/login"
@@ -102,7 +101,7 @@ function App() {
                     <RoleRoute requiredRoles={[1, 2]} element={<AdminDashboard />} /> 
                 } />
 				
-				{/* 🟢 RUTAS DE PRODUCTOS - DIVIDIDAS POR ROL */}
+				{/*RUTAS DE PRODUCTOS - DIVIDIDAS POR ROL */}
 				
 				{/* RUTA: Admin Products (CRUD Completo) */}
 				<Route path="/products/admin" element={
@@ -129,7 +128,7 @@ function App() {
                     isAuthenticated && user ? (
                         <Navigate to={getHomeRoute()} replace />
                     ) : (
-                        <Navigate to="/login" replace />
+                        <Navigate to="/" replace />
                     )
                 } />
 

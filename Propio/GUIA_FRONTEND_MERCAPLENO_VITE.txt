@@ -182,8 +182,8 @@ En este proyecto:
 
 3.11 app/routes/
 - app/routes/Login.jsx
-  Login + flujo de validacion por codigo para roles 1 y 2.
-  API: POST /api/auth/login.
+  Login + flujo de segundo factor por correo para roles 1 y 2.
+  APIs: POST /api/auth/login y POST /api/auth/verify-login-code.
 
 - app/routes/Registro.jsx
   Registro de usuario cliente.
@@ -301,6 +301,7 @@ Controllers backend:
 - src/auth/auth.controller.ts
   /auth/register
   /auth/login
+  /auth/verify-login-code
   /auth/verify-email
   /auth/resend-verification
   /auth/request-password-reset

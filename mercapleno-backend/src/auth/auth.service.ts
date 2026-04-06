@@ -5,6 +5,7 @@
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -18,6 +19,14 @@ import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { VerifyLoginCodeDto } from './dto/verify-login-code.dto';
+
+interface AuthTokenPayload {
+  sub: number;
+  id_rol: number;
+  email: string;
+  token_type: 'access' | 'login_2fa';
+}
 
 @Injectable()
 export class AuthService {
@@ -44,6 +53,153 @@ export class AuthService {
       return true;
     }
     return new Date(expiresAt).getTime() < Date.now();
+  }
+
+  private requiresLoginTwoFactor(idRol: number): boolean {
+    return idRol === 1 || idRol === 2;
+  }
+
+  private buildUserResponse(user: {
+    id: number;
+    nombre: string;
+    apellido: string;
+    email: string;
+    id_rol: number;
+    email_verified: boolean;
+    roles?: { nombre: string } | null;
+    tipos_identificacion?: { nombre: string } | null;
+  }) {
+    return {
+      id: user.id,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      email: user.email,
+      id_rol: user.id_rol,
+      email_verified: user.email_verified,
+      rol: user.roles?.nombre,
+      tipo_documento: user.tipos_identificacion?.nombre,
+    };
+  }
+
+  private buildAccessToken(user: { id: number; id_rol: number; email: string }): string {
+    return this.jwtService.sign({
+      sub: user.id,
+      id_rol: user.id_rol,
+      email: user.email,
+      token_type: 'access',
+    });
+  }
+
+  private buildPendingLoginToken(user: { id: number; id_rol: number; email: string }): string {
+    return this.jwtService.sign(
+      {
+        sub: user.id,
+        id_rol: user.id_rol,
+        email: user.email,
+        token_type: 'login_2fa',
+      },
+      {
+        expiresIn: `${envs.loginTwoFactorTtlMin}m`,
+      },
+    );
+  }
+
+  private async clearLoginTwoFactorChallenge(userId: number): Promise<void> {
+    await this.prisma.usuarios.update({
+      where: { id: userId },
+      data: {
+        login_two_factor_code: null,
+        login_two_factor_expires: null,
+      },
+    });
+  }
+
+  private async createLoginTwoFactorChallenge(user: {
+    id: number;
+    email: string;
+    id_rol: number;
+    roles?: { nombre: string } | null;
+  }) {
+    const loginCode = this.generateCode();
+    const loginCodeHash = this.hashCode(loginCode);
+    const loginCodeExpiresAt = this.buildExpiresAt(envs.loginTwoFactorTtlMin);
+
+    await this.prisma.usuarios.update({
+      where: { id: user.id },
+      data: {
+        login_two_factor_code: loginCodeHash,
+        login_two_factor_expires: loginCodeExpiresAt,
+      },
+    });
+
+    try {
+      await this.emailService.sendLoginTwoFactorCode(
+        user.email,
+        loginCode,
+        envs.loginTwoFactorTtlMin,
+        user.roles?.nombre,
+      );
+    } catch (_error) {
+      await this.clearLoginTwoFactorChallenge(user.id);
+      throw new InternalServerErrorException({
+        success: false,
+        message: 'No se pudo enviar el codigo de segundo factor. Intenta nuevamente.',
+      });
+    }
+
+    return {
+      success: true,
+      message: 'Enviamos un codigo de segundo factor a tu correo para completar el inicio de sesion.',
+      requiresTwoFactor: true,
+      pendingToken: this.buildPendingLoginToken(user),
+      twoFactorExpiresInMinutes: envs.loginTwoFactorTtlMin,
+      user: {
+        id: user.id,
+        email: user.email,
+        id_rol: user.id_rol,
+        rol: user.roles?.nombre,
+      },
+    };
+  }
+
+  private verifyPendingLoginToken(token: string): AuthTokenPayload {
+    try {
+      const payload = this.jwtService.verify<AuthTokenPayload>(token);
+
+      if (
+        payload.sub === undefined ||
+        payload.sub === null ||
+        !payload.email ||
+        payload.id_rol === undefined ||
+        payload.token_type !== 'login_2fa'
+      ) {
+        throw new UnauthorizedException('Token invalido');
+      }
+
+      return payload;
+    } catch (_error) {
+      throw new UnauthorizedException({
+        success: false,
+        message: 'La verificacion de segundo factor ya no es valida. Vuelve a iniciar sesion.',
+      });
+    }
+  }
+
+  async getDocumentTypes() {
+    const tiposIdentificacion = await this.prisma.tipos_identificacion.findMany({
+      select: {
+        id: true,
+        nombre: true,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+    });
+
+    return {
+      success: true,
+      tipos_identificacion: tiposIdentificacion,
+    };
   }
 
   async register(dto: RegisterDto) {
@@ -138,26 +294,78 @@ export class AuthService {
       });
     }
 
-    const token = this.jwtService.sign({
-      sub: user.id,
-      id_rol: user.id_rol,
-      email: user.email,
-    });
+    if (this.requiresLoginTwoFactor(user.id_rol)) {
+      return this.createLoginTwoFactorChallenge(user);
+    }
+
+    await this.clearLoginTwoFactorChallenge(user.id);
+
+    const token = this.buildAccessToken(user);
 
     return {
       success: true,
       message: 'Inicio de sesion exitoso',
       token,
-      user: {
-        id: user.id,
-        nombre: user.nombre,
-        apellido: user.apellido,
-        email: user.email,
-        id_rol: user.id_rol,
-        email_verified: user.email_verified,
-        rol: user.roles?.nombre,
-        tipo_documento: user.tipos_identificacion?.nombre,
+      user: this.buildUserResponse(user),
+    };
+  }
+
+  async verifyLoginCode(dto: VerifyLoginCodeDto) {
+    const pendingPayload = this.verifyPendingLoginToken(dto.pendingToken);
+
+    const user = await this.prisma.usuarios.findFirst({
+      where: {
+        id: Number(pendingPayload.sub),
+        email: pendingPayload.email,
       },
+      include: {
+        roles: true,
+        tipos_identificacion: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException({ success: false, message: 'Usuario no encontrado' });
+    }
+
+    if (!this.requiresLoginTwoFactor(user.id_rol)) {
+      throw new BadRequestException({
+        success: false,
+        message: 'Este usuario no requiere segundo factor.',
+      });
+    }
+
+    if (!user.login_two_factor_code || !user.login_two_factor_expires) {
+      throw new BadRequestException({
+        success: false,
+        message: 'No hay un codigo activo de segundo factor. Vuelve a iniciar sesion.',
+      });
+    }
+
+    if (this.isExpired(user.login_two_factor_expires)) {
+      await this.clearLoginTwoFactorChallenge(user.id);
+      throw new BadRequestException({
+        success: false,
+        message: 'El codigo de segundo factor ha expirado. Vuelve a iniciar sesion.',
+      });
+    }
+
+    if (this.hashCode(dto.code) !== user.login_two_factor_code) {
+      throw new ForbiddenException({
+        success: false,
+        message: 'Codigo de segundo factor incorrecto.',
+      });
+    }
+
+    await this.clearLoginTwoFactorChallenge(user.id);
+
+    const token = this.buildAccessToken(user);
+
+    return {
+      success: true,
+      message: 'Inicio de sesion exitoso',
+      token,
+      user: this.buildUserResponse(user),
     };
   }
 

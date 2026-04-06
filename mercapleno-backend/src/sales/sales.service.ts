@@ -12,7 +12,7 @@ import { EmailService } from '../email/email.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 const DOCUMENTO_VENTA_ID = 'CC';
-const MOVIMIENTO_VENTA_ID = 2;
+const MOVIMIENTO_VENTA_ID = 3;
 
 @Injectable()
 export class SalesService {

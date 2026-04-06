@@ -1,6 +1,8 @@
 export const API_ENDPOINTS = {
   auth: {
     login: "/api/auth/login",
+    documentTypes: "/api/auth/document-types",
+    verifyLoginCode: "/api/auth/verify-login-code",
     register: "/api/auth/register",
     verifyEmail: "/api/auth/verify-email",
     resendVerification: "/api/auth/resend-verification",
@@ -11,7 +13,8 @@ export const API_ENDPOINTS = {
     users: "/api/admin/users"
   },
   products: {
-    crud: "/api/productos"
+    crud: "/api/productos",
+    catalogs: "/api/productos/catalogos"
   },
   sales: {
     base: "/api/sales",

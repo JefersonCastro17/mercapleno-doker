@@ -21,6 +21,7 @@ interface EnvVars {
   SMTP_FROM_EMAIL?: string;
   APP_NAME: string;
   EMAIL_VERIFICATION_TTL_MIN: number;
+  LOGIN_2FA_TTL_MIN: number;
   PASSWORD_RESET_TTL_MIN: number;
   INTERNAL_API_KEY?: string;
   LOW_STOCK_THRESHOLD: number;
@@ -47,6 +48,7 @@ const schema = joi
     SMTP_FROM_EMAIL: joi.string().optional().allow(''),
     APP_NAME: joi.string().default('Mercapleno'),
     EMAIL_VERIFICATION_TTL_MIN: joi.number().default(15),
+    LOGIN_2FA_TTL_MIN: joi.number().integer().min(1).default(10),
     PASSWORD_RESET_TTL_MIN: joi.number().default(15),
     INTERNAL_API_KEY: joi.string().min(10).required(),
     LOW_STOCK_THRESHOLD: joi.number().integer().min(0).default(5),
@@ -95,6 +97,7 @@ export const envs = {
   smtpFromEmail: envVars.SMTP_FROM_EMAIL?.trim() || undefined,
   appName: envVars.APP_NAME,
   emailVerificationTtlMin: envVars.EMAIL_VERIFICATION_TTL_MIN,
+  loginTwoFactorTtlMin: envVars.LOGIN_2FA_TTL_MIN,
   passwordResetTtlMin: envVars.PASSWORD_RESET_TTL_MIN,
   internalApiKey: envVars.INTERNAL_API_KEY,
   lowStockThreshold: envVars.LOW_STOCK_THRESHOLD,

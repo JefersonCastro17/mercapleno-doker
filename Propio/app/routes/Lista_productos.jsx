@@ -16,6 +16,11 @@ const EMPTY_PRODUCT_FORM = {
   imageFile: null
 };
 
+const EMPTY_CATALOGS = {
+  categorias: [],
+  proveedores: []
+};
+
 const ACCEPTED_IMAGE_TYPES = "image/png,image/jpeg,image/webp,image/gif";
 
 function createProductFormState(producto = {}) {
@@ -70,6 +75,9 @@ function ProductModal({
   title,
   submitLabel,
   initialData,
+  categorias,
+  proveedores,
+  loadingCatalogs,
   onCerrar,
   onGuardar
 }) {
@@ -167,27 +175,51 @@ function ProductModal({
             </div>
 
             <div className="products-modal__field">
-              <label>Categoria (ID)</label>
-              <input
-                type="number"
+              <label>Categoria</label>
+              <select
                 name="id_categoria"
-                min="1"
                 value={formData.id_categoria}
                 onChange={handleChange}
+                disabled={loadingCatalogs || categorias.length === 0}
                 required
-              />
+              >
+                {loadingCatalogs ? (
+                  <option value="">Cargando categorias...</option>
+                ) : (
+                  <>
+                    <option value="">Seleccione una categoria</option>
+                    {categorias.map((categoria) => (
+                      <option key={categoria.id} value={categoria.id}>
+                        {categoria.nombre}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
             </div>
 
             <div className="products-modal__field">
-              <label>Proveedor (ID)</label>
-              <input
-                type="number"
+              <label>Proveedor</label>
+              <select
                 name="id_proveedor"
-                min="1"
                 value={formData.id_proveedor}
                 onChange={handleChange}
+                disabled={loadingCatalogs || proveedores.length === 0}
                 required
-              />
+              >
+                {loadingCatalogs ? (
+                  <option value="">Cargando proveedores...</option>
+                ) : (
+                  <>
+                    <option value="">Seleccione un proveedor</option>
+                    {proveedores.map((proveedor) => (
+                      <option key={proveedor.id} value={proveedor.id}>
+                        {proveedor.nombre}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
             </div>
 
             <div className="products-modal__field">
@@ -273,8 +305,8 @@ function ProductRow({ producto, onEdit, onDelete }) {
         </div>
       </td>
       <td>{formatPrice(producto.precio)}</td>
-      <td>{producto.id_categoria}</td>
-      <td>{producto.id_proveedor}</td>
+      <td>{producto.categoria_nombre || producto.id_categoria}</td>
+      <td>{producto.proveedor_nombre || producto.id_proveedor}</td>
       <td>
         <span className={`products-status ${String(producto.estado).toLowerCase() === "agotado" ? "is-empty" : "is-ready"}`}>
           {producto.estado}
@@ -322,8 +354,8 @@ function ProductCard({ producto, onEdit, onDelete }) {
       <p className="products-card__description">{producto.descripcion || "Sin descripcion registrada."}</p>
 
       <div className="products-card__meta">
-        <span>Categoria: {producto.id_categoria}</span>
-        <span>Proveedor: {producto.id_proveedor}</span>
+        <span>Categoria: {producto.categoria_nombre || producto.id_categoria}</span>
+        <span>Proveedor: {producto.proveedor_nombre || producto.id_proveedor}</span>
       </div>
 
       <div className="products-card__actions">
@@ -341,6 +373,8 @@ function ProductCard({ producto, onEdit, onDelete }) {
 export default function Lista_productos() {
   const { token, logout } = useAuthContext();
   const [productos, setProductos] = useState([]);
+  const [catalogos, setCatalogos] = useState(EMPTY_CATALOGS);
+  const [loadingCatalogs, setLoadingCatalogs] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [productoEditando, setProductoEditando] = useState(null);
@@ -375,13 +409,37 @@ export default function Lista_productos() {
     }
   };
 
+  const fetchCatalogos = async () => {
+    setLoadingCatalogs(true);
+
+    try {
+      const data = await httpRequest(API_ENDPOINTS.products.catalogs, {
+        auth: true,
+        token
+      });
+
+      setCatalogos({
+        categorias: Array.isArray(data?.categorias) ? data.categorias : [],
+        proveedores: Array.isArray(data?.proveedores) ? data.proveedores : []
+      });
+    } catch (err) {
+      if (handleAuthError(err)) return;
+      setError(err.message || "No se pudieron cargar categorias y proveedores.");
+      setCatalogos(EMPTY_CATALOGS);
+    } finally {
+      setLoadingCatalogs(false);
+    }
+  };
+
   useEffect(() => {
     if (!token) {
       setLoading(false);
+      setLoadingCatalogs(false);
       return;
     }
 
     fetchProductos();
+    fetchCatalogos();
   }, [token]);
 
   const filteredProducts = useMemo(() => {
@@ -393,6 +451,8 @@ export default function Lista_productos() {
         String(producto.id_productos).includes(normalizedSearch) ||
         String(producto.nombre || "").toLowerCase().includes(normalizedSearch) ||
         String(producto.descripcion || "").toLowerCase().includes(normalizedSearch) ||
+        String(producto.categoria_nombre || "").toLowerCase().includes(normalizedSearch) ||
+        String(producto.proveedor_nombre || "").toLowerCase().includes(normalizedSearch) ||
         String(producto.id_categoria || "").includes(normalizedSearch) ||
         String(producto.id_proveedor || "").includes(normalizedSearch);
 
@@ -493,7 +553,7 @@ export default function Lista_productos() {
           <div>
             <span className="products-overline">Inventario</span>
             <h1>Lista de productos</h1>
-            <p>Vista más limpia para encontrar productos, revisar su imagen y editar rápido.</p>
+            <p>Vista mas limpia para encontrar productos, revisar su imagen y editar rapido.</p>
           </div>
 
           <div className="products-header-actions">
@@ -540,11 +600,16 @@ export default function Lista_productos() {
         <section className="products-section">
           {loading ? <p className="products-state">Cargando productos...</p> : null}
           {error ? <p className="products-state products-state--error">{error}</p> : null}
+          {!loadingCatalogs && (catalogos.categorias.length === 0 || catalogos.proveedores.length === 0) ? (
+            <p className="products-state products-state--error">
+              Faltan categorias o proveedores en la base de datos. El formulario de productos puede quedar incompleto hasta cargar esos catalogos.
+            </p>
+          ) : null}
 
           {!loading && !error && filteredProducts.length === 0 ? (
             <div className="products-empty">
               <h2>No encontramos productos con ese filtro</h2>
-              <p>Prueba limpiando la búsqueda o cambiando el estado seleccionado.</p>
+              <p>Prueba limpiando la busqueda o cambiando el estado seleccionado.</p>
             </div>
           ) : null}
 
@@ -595,6 +660,9 @@ export default function Lista_productos() {
           title={`Editar ${productoEditando.nombre}`}
           submitLabel="Guardar cambios"
           initialData={productoEditando}
+          categorias={catalogos.categorias}
+          proveedores={catalogos.proveedores}
+          loadingCatalogs={loadingCatalogs}
           onCerrar={handleCloseModal}
           onGuardar={handleUpdateSubmit}
         />
@@ -605,6 +673,9 @@ export default function Lista_productos() {
           title="Agregar producto"
           submitLabel="Agregar"
           initialData={EMPTY_PRODUCT_FORM}
+          categorias={catalogos.categorias}
+          proveedores={catalogos.proveedores}
+          loadingCatalogs={loadingCatalogs}
           onCerrar={handleCloseModal}
           onGuardar={handleAddSubmit}
         />

@@ -1,4 +1,4 @@
-// 🟢 src/context/AuthContext.jsx (VERSION FINAL Y SIN ADVERTENCIA ESLINT)
+// src/context/AuthContext.jsx (VERSION FINAL Y SIN ADVERTENCIA ESLINT)
 
 // NOTA: Se eliminó 'useEffect' de la importación ya que no se usa en esta versión robusta.
 import React, { createContext, useState, useContext } from 'react'; 
@@ -7,7 +7,7 @@ const AuthContext = createContext(null);
 
 export const useAuthContext = () => {
     const context = useContext(AuthContext);
-    // 💡 BUENA PRÁCTICA: Verificar si se usa fuera del Provider
+    // BUENA PRÁCTICA: Verificar si se usa fuera del Provider
     if (!context) {
         throw new Error("useAuthContext debe usarse dentro de un AuthProvider");
     }
@@ -30,7 +30,7 @@ const getInitialAuthState = () => {
         // El usuario está corrupto, lo trataremos como no autenticado
     }
 
-    // 🔑 CLAVE: La autenticación solo es válida si AMBOS están presentes y son válidos.
+    //CLAVE: La autenticación solo es válida si AMBOS están presentes y son válidos.
     if (storedUser && storedToken) {
         return { user: storedUser, token: storedToken };
     }

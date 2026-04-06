@@ -1,4 +1,4 @@
-﻿import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from './decorators/public.decorator';
 import { AuthService } from './auth.service';
@@ -8,11 +8,19 @@ import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { VerifyLoginCodeDto } from './dto/verify-login-code.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get('document-types')
+  @Public()
+  @ApiOperation({ summary: 'Obtener tipos de identificacion disponibles' })
+  getDocumentTypes() {
+    return this.authService.getDocumentTypes();
+  }
 
   @Post('register')
   @Public()
@@ -27,6 +35,14 @@ export class AuthController {
   @ApiOperation({ summary: 'Iniciar sesion' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('verify-login-code')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verificar segundo factor de login' })
+  verifyLoginCode(@Body() dto: VerifyLoginCodeDto) {
+    return this.authService.verifyLoginCode(dto);
   }
 
   @Post('verify-email')

@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="mercaplenoLogoTitle mercaplenoLogoDesc">
-  <title id="mercaplenoLogoTitle">Mercapleno</title>
-  <desc id="mercaplenoLogoDesc">Logo de Mercapleno con monograma M sobre fondo azul y acento naranja.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="mercaplenoFaviconTitle mercaplenoFaviconDesc">
+  <title id="mercaplenoFaviconTitle">Mercapleno</title>
+  <desc id="mercaplenoFaviconDesc">Icono de Mercapleno con monograma M sobre fondo azul y acento naranja.</desc>
   <defs>
     <linearGradient id="mercaplenoBg" x1="64" y1="64" x2="448" y2="448" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#0A78E3" />

@@ -74,6 +74,32 @@ export class EmailService {
     this.logger.log(`Correo de verificacion enviado a ${email}. Message ID: ${info.messageId}`);
   }
 
+  async sendLoginTwoFactorCode(
+    email: string,
+    code: string,
+    ttlMin: number,
+    roleName?: string,
+  ): Promise<void> {
+    const transporter = this.getTransporter();
+    const profileLabel = roleName?.trim() || 'usuario administrativo';
+    const info = await transporter.sendMail({
+      from: this.fromAddress(),
+      to: email,
+      subject: `${envs.appName} - Codigo de acceso`,
+      text: `Tu codigo de segundo factor para ${profileLabel} es ${code}. Vence en ${ttlMin} minutos.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+          <p>Recibimos un intento de inicio de sesion para tu cuenta de <strong>${profileLabel}</strong>.</p>
+          <p>Tu codigo de segundo factor es:</p>
+          <div style="font-size: 28px; font-weight: bold; letter-spacing: 2px;">${code}</div>
+          <p>Este codigo vence en ${ttlMin} minutos y solo sirve para completar este inicio de sesion.</p>
+        </div>
+      `,
+    });
+
+    this.logger.log(`Correo de segundo factor enviado a ${email}. Message ID: ${info.messageId}`);
+  }
+
   async sendPasswordResetCode(email: string, code: string, ttlMin: number): Promise<void> {
     const transporter = this.getTransporter();
     const info = await transporter.sendMail({

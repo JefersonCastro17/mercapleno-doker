@@ -1,7 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'; //swagger
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { AppModule } from './app.module';
@@ -27,9 +27,9 @@ async function bootstrap() {
     }),
   );
 
-  const swaggerConfig = new DocumentBuilder()
+  const swaggerConfig = new DocumentBuilder() //swagger
     .setTitle('Mercapleno API')
-    .setDescription('Lo mas fino del pedazo')
+    .setDescription('Lo mas fino del pedazo') //cambiar por una descripción más adecuada a la API
     .setVersion('2.0.0')
     .addBearerAuth()
     .addSecurity('x-api-key', {
@@ -40,7 +40,7 @@ async function bootstrap() {
     })
     .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  const document = SwaggerModule.createDocument(app, swaggerConfig); //swagger 
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(envs.port);

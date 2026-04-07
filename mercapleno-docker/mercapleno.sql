@@ -395,25 +395,26 @@ CREATE TABLE `usuarios` (
   `email_verified` tinyint(1) NOT NULL DEFAULT 0,
   `email_verification_code` varchar(64) DEFAULT NULL,
   `email_verification_expires` datetime DEFAULT NULL,
-  `login_two_factor_code` varchar(64) DEFAULT NULL,
-  `login_two_factor_expires` datetime DEFAULT NULL,
   `password_reset_code` varchar(64) DEFAULT NULL,
-  `password_reset_expires` datetime DEFAULT NULL
+  `password_reset_expires` datetime DEFAULT NULL,
+  `login_two_factor_code` varchar(64) DEFAULT NULL,
+  `login_two_factor_expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `usuarios`
 --
 
-INSERT INTO `usuarios` (`id`, `nombre`, `apellido`, `email`, `password`, `direccion`, `fecha_nacimiento`, `fecha_registro`, `id_rol`, `id_tipo_identificacion`, `numero_identificacion`, `email_verified`, `email_verification_code`, `email_verification_expires`, `login_two_factor_code`, `login_two_factor_expires`, `password_reset_code`, `password_reset_expires`) VALUES
-(1, 'jeferson', 'castro', 'jeferson@gmail.com', '$2b$10$zbVd416r7StggmQ1l6WYOuRlLkgJWOeyTVHHXoVGIOuQVuLHF3PoO', 'villa del rio', '2006-02-08', '2025-12-12 01:08:58', 1, 1, '1212121349', 1, NULL, NULL, NULL, NULL, NULL, NULL),
-(2, 'juan', 'Perez', 'juanR@gmail.com', '$2b$10$jR9XYWp2ERoLpy7/Lf7I9OZEoM2fAPzZMSa0vuSI0JdbUXJZPPCMK', 'villa del rio', '2006-11-03', '2025-12-12 01:10:59', 2, 1, '12334343', 1, NULL, NULL, NULL, NULL, NULL, NULL),
-(4, 'dylan sneider', 'rivera mora', 'elpepeyt@gmail.com', '$2a$10$whzWt1cZ5aZoMUpL.v6fQOvzEEfMZOW4Auh047yQXgIMB2g7OkeY2', 'diagonal 42 a sur #81h 09, villa de la torre,Kennedy,  Bogota D.C', '1999-09-09', '2025-12-16 01:15:59', 2, 1, '66666666', 1, NULL, NULL, NULL, NULL, NULL, NULL),
-(6, 'pablo', 'rivero', 'pablo@gmail.com', '$2a$10$BlDDih/1lcUgG8H3kb/nUOqyJakWCsy4KryqVK2jJJ2PigqB5hQOK', 'villa del rio', '2008-07-09', '2025-12-17 11:20:20', 3, 1, '1233212343', 1, NULL, NULL, NULL, NULL, NULL, NULL),
-(8, 'Daniel', 'Lozano', 'daniel@gmail.com', '$2a$10$Cr8xAMObrJwR0rAI.UW9NOP184sPJOjseLmpOTOiWh4TGwtvxmLOa', 'puerta6', '2006-12-31', '2026-02-03 19:17:51', 3, 1, '10125555421', 1, NULL, NULL, NULL, NULL, NULL, NULL),
-(9, 'pepito ', 'perez', 'pepe@gmail.com', '$2a$10$AMjFZq7E7CPWE1VhqUHh7ubsJvYYsJWtyDcwsiDzJtx3ZgdSC6G5a', 'villa del rio', '2007-07-11', '2026-02-03 19:39:08', 3, 1, '11323454', 1, NULL, NULL, NULL, NULL, NULL, NULL),
-(15, 'Yogui', 'Castro', 'jefersonjairbernalcastro172129@gmail.com', '$2a$10$65RcZUqiv.xO8MbUta7CEO9ZApYYo7/vwhwPeqsNMQAA5s9vvPXaC', 'calle 12 # 12', '2000-05-21', '2026-02-10 01:23:12', 3, 1, '21365487', 1, NULL, NULL, NULL, NULL, NULL, NULL),
-(16, 'sebastian', 'rivera', '5juansebas5@gmail.com', '$2a$10$fvqQp4Rmlx2Bq5c0K5kpl.7CTlkXB4PTum4N9p9SXe/zQC2Lk1s4C', 'calle 5# 12 norte', '2007-05-10', '2026-02-10 01:27:28', 3, 1, '123456789', 0, 'f4bfb4ad07bbb6b2d89abd6464a640437a920c40dff43bc27d37b5770ff47e35', '2026-02-09 20:42:28', NULL, NULL, NULL, NULL);
+INSERT INTO `usuarios` (`id`, `nombre`, `apellido`, `email`, `password`, `direccion`, `fecha_nacimiento`, `fecha_registro`, `id_rol`, `id_tipo_identificacion`, `numero_identificacion`, `email_verified`, `email_verification_code`, `email_verification_expires`, `password_reset_code`, `password_reset_expires`) VALUES
+(1, 'jeferson', 'castro', 'jeferson@gmail.com', '$2b$10$zbVd416r7StggmQ1l6WYOuRlLkgJWOeyTVHHXoVGIOuQVuLHF3PoO', 'villa del rio', '2006-02-08', '2025-12-12 01:08:58', 1, 1, '1212121349', 1, NULL, NULL, NULL, NULL),
+(2, 'juan', 'Perez', 'juanR@gmail.com', '$2b$10$jR9XYWp2ERoLpy7/Lf7I9OZEoM2fAPzZMSa0vuSI0JdbUXJZPPCMK', 'villa del rio', '2006-11-03', '2025-12-12 01:10:59', 2, 1, '12334343', 1, NULL, NULL, NULL, NULL),
+(4, 'dylan sneider', 'rivera mora', 'elpepeyt@gmail.com', '$2a$10$whzWt1cZ5aZoMUpL.v6fQOvzEEfMZOW4Auh047yQXgIMB2g7OkeY2', 'diagonal 42 a sur #81h 09, villa de la torre,Kennedy,  Bogota D.C', '1999-09-09', '2025-12-16 01:15:59', 2, 1, '66666666', 1, NULL, NULL, NULL, NULL),
+(6, 'pablo', 'rivero', 'pablo@gmail.com', '$2a$10$BlDDih/1lcUgG8H3kb/nUOqyJakWCsy4KryqVK2jJJ2PigqB5hQOK', 'villa del rio', '2008-07-09', '2025-12-17 11:20:20', 3, 1, '1233212343', 1, NULL, NULL, NULL, NULL),
+(8, 'Daniel', 'Lozano', 'daniel@gmail.com', '$2a$10$Cr8xAMObrJwR0rAI.UW9NOP184sPJOjseLmpOTOiWh4TGwtvxmLOa', 'puerta6', '2006-12-31', '2026-02-03 19:17:51', 3, 1, '10125555421', 1, NULL, NULL, NULL, NULL),
+(9, 'pepito ', 'perez', 'pepe@gmail.com', '$2a$10$AMjFZq7E7CPWE1VhqUHh7ubsJvYYsJWtyDcwsiDzJtx3ZgdSC6G5a', 'villa del rio', '2007-07-11', '2026-02-03 19:39:08', 3, 1, '11323454', 1, NULL, NULL, NULL, NULL),
+(14, 'Usuario', 'Desconocido', 'usuario14@mercapleno.com', '$2a$10$KIX6aG5rMuejg0BD.7q9w.8KNCvT9LjouP8A3czVQHn0k.Tyn0WvG', 'desconocido', '1990-01-01', '2026-02-06 00:00:00', 3, 1, '0000000014', 1, NULL, NULL, NULL, NULL),
+(15, 'Yogui', 'Castro', 'jefersonjairbernalcastro172129@gmail.com', '$2a$10$65RcZUqiv.xO8MbUta7CEO9ZApYYo7/vwhwPeqsNMQAA5s9vvPXaC', 'calle 12 # 12', '2000-05-21', '2026-02-10 01:23:12', 1, 1, '21365487', 1, NULL, NULL, NULL, NULL),
+(16, 'sebastian', 'rivera', '5juansebas5@gmail.com', '$2a$10$fvqQp4Rmlx2Bq5c0K5kpl.7CTlkXB4PTum4N9p9SXe/zQC2Lk1s4C', 'calle 5# 12 norte', '2007-05-10', '2026-02-10 01:27:28', 3, 1, '123456789', 0, 'f4bfb4ad07bbb6b2d89abd6464a640437a920c40dff43bc27d37b5770ff47e35', '2026-02-09 20:42:28', NULL, NULL);
 
 -- --------------------------------------------------------
 

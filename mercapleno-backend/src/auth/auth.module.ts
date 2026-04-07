@@ -14,8 +14,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       signOptions: { expiresIn: envs.jwtExpiresIn as any },
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [JwtModule, PassportModule],
+  controllers: [AuthController], // Agrega AuthController a los controllers
+  providers: [AuthService, JwtStrategy], // Agrega JwtStrategy a los providers
+  exports: [JwtModule, PassportModule], // Exporta JwtModule y PassportModule para que puedan ser usados en otros módulos
 })
 export class AuthModule {}

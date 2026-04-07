@@ -1,4 +1,4 @@
-// 🟢 src/hooks/useCart.js (CORREGIDO para aceptar id_metodo)
+// src/hooks/useCart.js (CORREGIDO para aceptar id_metodo)
 
 import { useState, useEffect, useMemo } from 'react';
 import { sendOrder } from '../services/productData'; // ¡Importante: asegúrate de que exista en productData.js!
@@ -76,7 +76,7 @@ export const useCart = () => {
   }, [cart]);
 
   // --- FUNCIÓN DE CHECKOUT (CORREGIDA: ACEPTA id_metodo) ---
-  // 🚨 CAMBIO CLAVE 1: Ahora acepta el id_metodo como parámetro
+  //CAMBIO CLAVE 1: Ahora acepta el id_metodo como parámetro
   const processCheckout = async (id_metodo) => { 
     if (cart.length > 0) {
         
@@ -87,7 +87,7 @@ export const useCart = () => {
                 cantidad: item.cantidad
             })),
             total: totals.finalTotal,
-            // 🚨 CAMBIO CLAVE 2: Incluye el id_metodo recibido
+            // CAMBIO CLAVE 2: Incluye el id_metodo recibido
             id_metodo: id_metodo 
         };
 

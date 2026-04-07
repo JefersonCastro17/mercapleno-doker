@@ -36,7 +36,7 @@ const schema = joi
     DB_USER: joi.string().default('root'),
     DB_PASSWORD: joi.string().allow('').default(''),
     DB_NAME: joi.string().default('mercapleno'),
-    JWT_SECRET: joi.string().default('yogui'),
+    JWT_SECRET: joi.string().default('yogui'), //token
     JWT_EXPIRES_IN: joi.string().default('2h'),
     ADMIN_ROLE_ID: joi.number().default(1),
     SMTP_SERVICE: joi.string().optional().allow(''),

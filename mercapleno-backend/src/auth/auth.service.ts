@@ -80,7 +80,7 @@ export class AuthService {
       tipo_documento: user.tipos_identificacion?.nombre,
     };
   }
-
+// token a
   private buildAccessToken(user: { id: number; id_rol: number; email: string }): string {
     return this.jwtService.sign({
       sub: user.id,
@@ -89,7 +89,7 @@ export class AuthService {
       token_type: 'access',
     });
   }
-
+//token b
   private buildPendingLoginToken(user: { id: number; id_rol: number; email: string }): string {
     return this.jwtService.sign(
       {

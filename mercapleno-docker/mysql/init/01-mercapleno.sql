@@ -1,6 +1,0 @@
--- Inicializacion delegada al backend:
--- 1. prisma migrate deploy
--- 2. npm run seed:base
--- 3. npm run seed:catalog
---
--- Este archivo se mantiene solo como marcador para el contenedor MariaDB.
